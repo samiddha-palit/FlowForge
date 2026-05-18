@@ -1,0 +1,38 @@
+# Smoke-test SparkApplication for the flowforge/spark-runner image.
+# Run after `make spark-runner-build && kind load docker-image flowforge/spark-runner:dev --name flowforge`
+#
+# This spec encodes a minimal 1-node DAG (source only) as the DAG_SPEC env var.
+# base64 of: {"nodes":[{"id":"n1","type":"source","config":{"path":"s3a://flowforge-data/raw/yellow_tripdata_sample.csv"},"position":{"x":0,"y":0}}],"edges":[]}
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: flowforge-runner-test
+  namespace: default
+spec:
+  type: Python
+  mode: cluster
+  image: "flowforge/spark-runner:dev"
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: "local:///app/runner.py"
+  sparkVersion: "3.5.1"
+  restartPolicy:
+    type: Never
+  hadoopConf:
+    "fs.s3a.endpoint": "http://minio.minio.svc.cluster.local:9000"
+    "fs.s3a.access.key": "minioadmin"
+    "fs.s3a.secret.key": "minioadmin"
+    "fs.s3a.path.style.access": "true"
+    "fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider"
+  driver:
+    cores: 1
+    memory: "1g"
+    serviceAccount: spark
+    env:
+      - name: DAG_SPEC
+        # echo '{"nodes":[{"id":"n1","type":"source","config":{"path":"s3a://flowforge-data/raw/yellow_tripdata_sample.csv"},"position":{"x":0,"y":0}}],"edges":[]}' | base64
+        value: "eyJub2RlcyI6W3siaWQiOiJuMSIsInR5cGUiOiJzb3VyY2UiLCJjb25maWciOnsicGF0aCI6InMzYTovL2Zsb3dmb3JnZS1kYXRhL3Jhdy95ZWxsb3dfdHJpcGRhdGFfc2FtcGxlLmNzdiJ9LCJwb3NpdGlvbiI6eyJ4IjowLCJ5IjowfX1dLCJlZGdlcyI6W119"
+  executor:
+    cores: 1
+    instances: 1
+    memory: "1g"

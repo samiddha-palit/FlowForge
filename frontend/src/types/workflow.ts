@@ -1,9 +1,42 @@
+export type NodeType = "source" | "transform" | "sink";
+
+export interface SourceConfig {
+  path: string;
+}
+
+export interface TransformConfig {
+  sql: string;
+}
+
+export interface SinkConfig {
+  path: string;
+}
+
+export type NodeConfig = SourceConfig | TransformConfig | SinkConfig;
+
+export interface DagNode {
+  id: string;
+  type: NodeType;
+  config: NodeConfig;
+  position: { x: number; y: number };
+}
+
+export interface DagEdge {
+  from: string;
+  to: string;
+}
+
+export interface DagSpec {
+  nodes: DagNode[];
+  edges: DagEdge[];
+}
+
 export interface Workflow {
   id: string;
   name: string;
   description: string;
   owner_id: string;
-  spec_json: Record<string, unknown>;
+  spec_json: DagSpec | Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

@@ -1,0 +1,34 @@
+# MinIO Helm values for local FlowForge development
+# Chart: minio/minio
+# Install: helm install minio minio/minio \
+#            --namespace minio --create-namespace \
+#            -f infra/helm/minio-values.yaml
+
+mode: standalone
+replicas: 1
+
+rootUser: minioadmin
+rootPassword: minioadmin
+
+resources:
+  requests:
+    memory: 256Mi
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+# Expose MinIO API on NodePort 30900 for local access (mc client, port-forward)
+service:
+  type: ClusterIP
+  port: 9000
+
+consoleService:
+  type: NodePort
+  nodePort: 30901
+
+# Pre-create the flowforge-data bucket on startup
+buckets:
+  - name: flowforge-data
+    policy: none
+    purge: false

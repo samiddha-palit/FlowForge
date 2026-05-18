@@ -1,0 +1,24 @@
+# Spark Operator Helm values for local FlowForge development
+# Chart: spark-operator/spark-operator (kubeflow)
+# Install: helm install spark-operator spark-operator/spark-operator \
+#            --namespace spark-operator --create-namespace \
+#            -f infra/helm/spark-operator-values.yaml
+
+sparkJobNamespace: "default"
+
+# Reduce resource overhead for local Kind cluster
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+webhook:
+  enable: false
+
+metrics:
+  enable: false

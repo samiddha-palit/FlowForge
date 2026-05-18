@@ -1,0 +1,44 @@
+# Verifies end-to-end MinIO read/write via a full 3-node NYC taxi pipeline:
+#   source (CSV) -> transform (SQL aggregate) -> sink (Parquet)
+#
+# DAG spec (base64-encoded):
+# {
+#   "nodes": [
+#     {"id":"src","type":"source","config":{"path":"s3a://flowforge-data/raw/yellow_tripdata_sample.csv"},"position":{"x":0,"y":0}},
+#     {"id":"trx","type":"transform","config":{"sql":"SELECT PULocationID, COUNT(*) as trips, SUM(fare_amount) as total_fare FROM input GROUP BY PULocationID"},"position":{"x":0,"y":100}},
+#     {"id":"snk","type":"sink","config":{"path":"s3a://flowforge-data/output/taxi_by_zone"},"position":{"x":0,"y":200}}
+#   ],
+#   "edges":[{"from":"src","to":"trx"},{"from":"trx","to":"snk"}]
+# }
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: verify-minio
+  namespace: default
+spec:
+  type: Python
+  mode: cluster
+  image: "flowforge/spark-runner:dev"
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: "local:///app/runner.py"
+  sparkVersion: "3.5.1"
+  restartPolicy:
+    type: Never
+  hadoopConf:
+    "fs.s3a.endpoint": "http://minio.minio.svc.cluster.local:9000"
+    "fs.s3a.access.key": "minioadmin"
+    "fs.s3a.secret.key": "minioadmin"
+    "fs.s3a.path.style.access": "true"
+    "fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider"
+  driver:
+    cores: 1
+    memory: "2g"
+    serviceAccount: spark
+    env:
+      - name: DAG_SPEC
+        value: "eyJub2RlcyI6W3siaWQiOiJzcmMiLCJ0eXBlIjoic291cmNlIiwiY29uZmlnIjp7InBhdGgiOiJzM2E6Ly9mbG93Zm9yZ2UtZGF0YS9yYXcveWVsbG93X3RyaXBkYXRhX3NhbXBsZS5jc3YifSwicG9zaXRpb24iOnsieCI6MCwieSI6MH19LHsiaWQiOiJ0cngiLCJ0eXBlIjoidHJhbnNmb3JtIiwiY29uZmlnIjp7InNxbCI6IlNFTEVDVCBQVUxvY2F0aW9uSUQsIENPVU5UKCopIGFzIHRyaXBzLCBTVU0oZmFyZV9hbW91bnQpIGFzIHRvdGFsX2ZhcmUgRlJPTSBpbnB1dCBHUk9VUCBCWSBQVUxvY2F0aW9uSUQifSwicG9zaXRpb24iOnsieCI6MCwieSI6MTAwfX0seyJpZCI6InNuayIsInR5cGUiOiJzaW5rIiwiY29uZmlnIjp7InBhdGgiOiJzM2E6Ly9mbG93Zm9yZ2UtZGF0YS9vdXRwdXQvdGF4aV9ieV96b25lIn0sInBvc2l0aW9uIjp7IngiOjAsInkiOjIwMH19XSwiZWRnZXMiOlt7ImZyb20iOiJzcmMiLCJ0byI6InRyeCJ9LHsiZnJvbSI6InRyeCIsInRvIjoic25rIn1dfQ=="
+  executor:
+    cores: 1
+    instances: 2
+    memory: "2g"

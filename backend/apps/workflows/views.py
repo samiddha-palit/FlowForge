@@ -19,6 +19,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def runs(self, request, pk=None):
+        from .tasks import submit_workflow_run
+
         workflow = self.get_object()
         last = workflow.versions.first()
         version_number = (last.version_number + 1) if last else 1
@@ -28,6 +30,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             spec_json=workflow.spec_json,
         )
         run = Run.objects.create(workflow_version=version)
+        submit_workflow_run.delay(str(run.id))
         return Response(RunSerializer(run).data, status=status.HTTP_201_CREATED)
 
 
