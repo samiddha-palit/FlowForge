@@ -1,0 +1,67 @@
+{
+  "realm": "flowforge",
+  "enabled": true,
+  "displayName": "FlowForge",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "accessTokenLifespan": 3600,
+  "ssoSessionMaxLifespan": 36000,
+  "clients": [
+    {
+      "clientId": "flowforge-frontend",
+      "name": "FlowForge Frontend",
+      "description": "Public PKCE client for the React app",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email"
+      ]
+    },
+    {
+      "clientId": "flowforge-backend",
+      "name": "FlowForge Backend",
+      "description": "Confidential client used by Django to validate bearer tokens",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "flowforge-backend-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "bearerOnly": true
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "email": "testuser@flowforge.dev",
+      "firstName": "Test",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

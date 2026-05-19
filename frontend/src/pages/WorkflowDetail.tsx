@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 
 import DagCanvas from "../components/DagCanvas";
+import RunPanel from "../components/RunPanel";
 import { useWorkflow } from "../hooks/useWorkflow";
 
 export default function WorkflowDetail() {
@@ -40,6 +41,8 @@ export default function WorkflowDetail() {
       </header>
 
       <DagCanvas workflow={workflow} />
+
+      <RunPanel workflowId={workflow.id} />
     </div>
   );
 }

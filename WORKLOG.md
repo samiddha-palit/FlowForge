@@ -147,3 +147,55 @@
 - ✅ Updated `backend/apps/workflows/views.py`: `POST /api/workflows/{id}/runs/` now enqueues `submit_workflow_run.delay(run_id)` after creating the Run row
 - ✅ Updated `infra/docker-compose.yml`: added `celery-worker` service (same image as backend; mounts `~/.kube` read-only so it can reach the Kind cluster from the host)
 - **Next:** Week 16 — Keycloak in Docker Compose
+
+## Week 16 — Keycloak in Docker Compose
+
+### Session 1 (2026-05-19)
+- ✅ Created `infra/keycloak/realm-flowforge.json`: `flowforge` realm with `flowforge-frontend` (public, PKCE) and `flowforge-backend` (confidential, bearer-only) clients; one test user (`testuser` / `testpass`)
+- ✅ Updated `infra/docker-compose.yml`: added `keycloak` service (`quay.io/keycloak/keycloak:26.0`, `start-dev --import-realm`, realm JSON mounted at `/opt/keycloak/data/import/`); healthcheck polls OIDC discovery endpoint
+- **Next:** Week 17 — Django + React OIDC integration
+
+## Week 17 — Django + React OIDC integration
+
+### Session 1 (2026-05-19)
+- ✅ Added `mozilla-django-oidc==4.0.1` to `backend/requirements.txt`
+- ✅ Updated `backend/flowforge/settings.py`: added `mozilla_django_oidc` + `corsheaders` to INSTALLED_APPS; added `OIDCAuthentication` + `IsAuthenticated` as DRF defaults; added `OIDC_RP_*` / `OIDC_OP_*` settings (env-driven); added `AUTHENTICATION_BACKENDS`
+- ✅ Updated `backend/flowforge/urls.py`: added `path("oidc/", include("mozilla_django_oidc.urls"))`
+- ✅ Updated `backend/apps/workflows/views.py`: removed `AllowAny` from viewsets (now use `IsAuthenticated` default); kept `AllowAny` on `health_check`
+- ✅ Added `react-oidc-context ^3.2.0` and `oidc-client-ts ^3.1.0` to `frontend/package.json`
+- ✅ Created `frontend/src/auth/oidcConfig.ts`: PKCE config pointing at `http://localhost:8080/realms/flowforge`; `onSigninCallback` clears URL params
+- ✅ Created `frontend/src/auth/AuthGuard.tsx`: redirects to Keycloak if unauthenticated; shows loading/error states
+- ✅ Created `frontend/src/auth/TokenSetter.tsx`: keeps module-level token getter in sync with OIDC user
+- ✅ Updated `frontend/src/api/client.ts`: `setTokenGetter` + auto-injects `Authorization: Bearer` on every `apiFetch` call
+- ✅ Updated `frontend/src/main.tsx`: wrapped with `<AuthProvider>`
+- ✅ Updated `frontend/src/App.tsx`: all routes wrapped with `<AuthGuard>`; `<TokenSetter />` rendered at root
+- ✅ Updated `frontend/src/pages/WorkflowsList.tsx`: added email display + Sign out button
+- **Next:** Week 18 — End-to-end happy path
+
+## Week 18 — End-to-end happy path
+
+### Session 1 (2026-05-19)
+- ✅ Added `django-cors-headers==4.6.0` to `backend/requirements.txt` + wired into INSTALLED_APPS and MIDDLEWARE (CorsMiddleware first); `CORS_ALLOWED_ORIGINS` env-driven, defaults to `http://localhost:3000`
+- ✅ Updated `infra/docker-compose.yml`: added `OIDC_*` env vars to both `backend` and `celery-worker` services so they share the same Keycloak endpoints
+- ✅ Verified integration seams: health check remains public (`AllowAny`), Keycloak realm auto-imports on cold start, PKCE redirect URI matches `http://localhost:3000/*`, Django OIDC introspects tokens via Keycloak userinfo endpoint reachable at `http://keycloak:8080` within Docker network
+- **Next:** Week 19 — Run status + basic logs
+
+## Week 19 — Run status & basic logs
+
+### Session 1 (2026-05-19)
+- ✅ Updated `backend/apps/workflows/tasks.py`: added `poll_run_statuses` Celery beat task — finds PENDING/RUNNING runs with a `k8s_job_name`, fetches `SparkApplication` status from K8s, maps `applicationState.state` to `Run.Status`, updates `started_at` / `finished_at` timestamps
+- ✅ Added `CELERY_BEAT_SCHEDULE` to `backend/flowforge/settings.py`: runs `poll_run_statuses` every 10 seconds
+- ✅ Updated `infra/docker-compose.yml`: changed celery-worker command to `--beat` so polling runs in the same process
+- ✅ Updated `backend/apps/workflows/views.py`: `runs` action now supports `GET` (returns last 10 runs for the workflow) and `POST` (creates run + enqueues task); added `logs` action to `RunViewSet` — fetches driver pod logs via `CoreV1Api` with `spark-role=driver` label selector
+- ✅ Created `frontend/src/hooks/useCreateRun.ts`, `useRuns.ts` (polls every 8 s), `useRunLogs.ts`
+- ✅ Created `frontend/src/components/RunPanel.tsx`: Run Pipeline button + status badge list (color-coded) + LogsModal (raw driver log, 500-line tail)
+- ✅ Updated `frontend/src/pages/WorkflowDetail.tsx`: added `<RunPanel>` below the DAG canvas
+- **Next:** Week 20 — Polish, README, demo artifacts
+
+## Week 20 — Polish, README, demo artifacts
+
+### Session 1 (2026-05-19)
+- ✅ Rewrote `README.md`: hero description, quick-start (2-step: `make up` + cluster commands), tech-stack table, demo pipeline description, project layout tree, Makefile reference, test instructions
+- ✅ Created `docs/ARCHITECTURE.md`: 5 ASCII request-flow diagrams (build/save, run, status polling, log streaming, auth); component map; infrastructure topology diagram
+- ✅ Created `docs/RESUME_BULLETS.md`: 4 bullets — core headline + data engineering, platform/full-stack, and infrastructure angles; tip on quantifying with demo metrics
+- **Deliverable: Repo is ready to share in interviews**

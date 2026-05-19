@@ -1,3 +1,4 @@
+import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 
 import { useCreateWorkflow } from "../hooks/useCreateWorkflow";
@@ -12,6 +13,7 @@ function formatDate(iso: string) {
 }
 
 export default function WorkflowsList() {
+  const auth = useAuth();
   const navigate = useNavigate();
   const { data, isLoading, isError } = useWorkflows();
   const createWorkflow = useCreateWorkflow();
@@ -27,13 +29,24 @@ export default function WorkflowsList() {
     <div className="min-h-screen bg-gray-950 text-white">
       <header className="border-b border-gray-800 px-8 py-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold tracking-tight">FlowForge</h1>
-        <button
-          onClick={handleNew}
-          disabled={createWorkflow.isPending}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-        >
-          {createWorkflow.isPending ? "Creating…" : "New workflow"}
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500 hidden sm:block">
+            {auth.user?.profile.email}
+          </span>
+          <button
+            onClick={handleNew}
+            disabled={createWorkflow.isPending}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+          >
+            {createWorkflow.isPending ? "Creating…" : "New workflow"}
+          </button>
+          <button
+            onClick={() => auth.signoutRedirect()}
+            className="rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-8 py-10">
